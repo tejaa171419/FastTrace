@@ -132,6 +132,7 @@ export default {
 			screens: {
 				'xs': '320px',
 				'sm': '480px',
+				'mobile-lg': '600px', // Large mobile devices (6"+ phones)
 				'md': '768px',
 				'lg': '1024px',
 				'xl': '1280px',
@@ -142,6 +143,9 @@ export default {
 				'safe-bottom': 'env(safe-area-inset-bottom)',
 				'safe-left': 'env(safe-area-inset-left)',
 				'safe-right': 'env(safe-area-inset-right)',
+			},
+			padding: {
+				'safe': 'max(env(safe-area-inset-bottom), 0.5rem)',
 			},
 			scale: {
 				'102': '1.02',

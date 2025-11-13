@@ -21,15 +21,11 @@ const MobileNavigation = ({ activeMode, onModeChange, activeSubNav, onSubNavChan
     { id: 'create-group', label: 'Create Group', icon: Plus },
     { id: 'join-group', label: 'Join Group', icon: UserPlus },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'analytics', label: 'Analytics', icon: PieChart },
-    { id: 'history', label: 'History', icon: History },
   ];
 
   const personalNavItems = [
-    { id: 'home', label: 'Home', icon: Home },
+    { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'expenses', label: 'Expenses', icon: TrendingUp },
-    { id: 'analytics', label: 'Analytics', icon: PieChart },
-    { id: 'history', label: 'History', icon: History },
   ];
 
   const currentNavItems = activeMode === 'group' ? groupNavItems : personalNavItems;

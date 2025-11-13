@@ -1,22 +1,23 @@
-# Welcome to your Lovable project
+# fastTrace - Smart Expense Tracker
 
-## Project info
+**fastTrace** is a modern, intelligent expense tracking application that helps you manage personal finances and group expenses with ease. Built with cutting-edge technologies for a seamless user experience.
 
-**URL**: https://lovable.dev/projects/13d55a53-899b-4962-b6fd-52475d13e72c
+## Features
+
+- 🎯 **Smart Expense Tracking** - AI-powered insights and spending pattern analysis
+- 👥 **Group Management** - Create groups, split bills, and settle payments effortlessly
+- 📊 **Financial Analytics** - Detailed reports and visual spending insights
+- 🔒 **Secure Payments** - Bank-grade security for all transactions
+- 📱 **Mobile-First Design** - Responsive design optimized for all devices
+- 🎨 **Modern UI** - Beautiful glassmorphism design with smooth animations
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/13d55a53-899b-4962-b6fd-52475d13e72c) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +63,4 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/13d55a53-899b-4962-b6fd-52475d13e72c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+You can deploy this project using various hosting services like Vercel, Netlify, or GitHub Pages.

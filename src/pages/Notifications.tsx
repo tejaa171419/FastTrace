@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -13,7 +13,15 @@ import {
   Calendar,
   Settings,
   Filter,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2,
+  ArrowDownRight,
+  ArrowUpRight,
+  Plus,
+  Send,
+  Shield,
+  Gift,
+  AlertCircle as AlertCircleIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,197 +31,188 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import withLayout from "@/components/withLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
 
-interface Notification {
-  id: string;
-  type: 'expense' | 'payment' | 'group' | 'message' | 'reminder' | 'system';
-  title: string;
-  message: string;
-  timestamp: Date;
-  isRead: boolean;
-  actionRequired?: boolean;
-  groupId?: string;
-  groupName?: string;
-  amount?: number;
-  currency?: string;
-  avatar?: string;
-  userName?: string;
-}
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      type: 'expense',
-      title: 'New Expense Added',
-      message: 'Alice added "Dinner at Ocean View" ($120.50) to Beach Trip 2024',
-      timestamp: new Date(Date.now() - 300000),
-      isRead: false,
-      actionRequired: true,
-      groupId: 'group-1',
-      groupName: 'Beach Trip 2024',
-      amount: 120.50,
-      currency: 'USD',
-      userName: 'Alice Johnson',
-      avatar: ''
-    },
-    {
-      id: "2",
-      type: 'payment',
-      title: 'Payment Request',
-      message: 'Bob requests $45.25 for your share of gas expenses',
-      timestamp: new Date(Date.now() - 900000),
-      isRead: false,
-      actionRequired: true,
-      amount: 45.25,
-      currency: 'USD',
-      userName: 'Bob Smith',
-      avatar: ''
-    },
-    {
-      id: "3",
-      type: 'message',
-      title: 'New Message',
-      message: 'Carol: "Can someone upload the hotel receipt?"',
-      timestamp: new Date(Date.now() - 1800000),
-      isRead: true,
-      groupId: 'group-1',
-      groupName: 'Beach Trip 2024',
-      userName: 'Carol Wilson',
-      avatar: ''
-    },
-    {
-      id: "4", 
-      type: 'group',
-      title: 'Added to Group',
-      message: 'You were added to "Weekend Getaway" by David',
-      timestamp: new Date(Date.now() - 3600000),
-      isRead: true,
-      groupId: 'group-2',
-      groupName: 'Weekend Getaway',
-      userName: 'David Brown',
-      avatar: ''
-    },
-    {
-      id: "5",
-      type: 'payment',
-      title: 'Payment Received',
-      message: 'Alice sent you $30.00 for coffee expenses',
-      timestamp: new Date(Date.now() - 7200000),
-      isRead: true,
-      amount: 30.00,
-      currency: 'USD',
-      userName: 'Alice Johnson',
-      avatar: ''
-    },
-    {
-      id: "6",
-      type: 'reminder',
-      title: 'Settlement Reminder', 
-      message: 'Beach Trip 2024 has pending settlements worth $156.75',
-      timestamp: new Date(Date.now() - 10800000),
-      isRead: true,
-      actionRequired: true,
-      groupId: 'group-1',
-      groupName: 'Beach Trip 2024',
-      amount: 156.75,
-      currency: 'USD'
-    },
-    {
-      id: "7",
-      type: 'system',
-      title: 'Export Complete',
-      message: 'Your expense report for March 2024 is ready for download',
-      timestamp: new Date(Date.now() - 86400000),
-      isRead: true
-    }
-  ]);
+  
+  // Use the new wallet notifications hook
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications();
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: string) => {
     const iconClass = "w-5 h-5";
     switch (type) {
-      case 'expense': return <TrendingUp className={iconClass} />;
-      case 'payment': return <CreditCard className={iconClass} />;
-      case 'group': return <Users className={iconClass} />;
-      case 'message': return <MessageSquare className={iconClass} />;
-      case 'reminder': return <Calendar className={iconClass} />;
-      case 'system': return <Settings className={iconClass} />;
-      default: return <Bell className={iconClass} />;
+      // Wallet-specific notifications
+      case 'wallet_transfer_sent':
+        return <Send className={iconClass} />;
+      case 'wallet_transfer_received':
+        return <ArrowDownRight className={iconClass} />;
+      case 'wallet_topup':
+      case 'wallet_topup_success':
+        return <Plus className={iconClass} />;
+      case 'wallet_topup_failed':
+        return <AlertCircleIcon className={iconClass} />;
+      case 'low_balance_alert':
+        return <AlertCircleIcon className={iconClass} />;
+      case 'high_transaction_alert':
+      case 'daily_limit_alert':
+      case 'monthly_limit_alert':
+        return <TrendingUp className={iconClass} />;
+      case 'wallet_security_alert':
+      case 'pin_changed':
+        return <Shield className={iconClass} />;
+      case 'cashback_received':
+      case 'reward_earned':
+        return <Gift className={iconClass} />;
+      // Original notifications
+      case 'expense_added':
+      case 'expense_updated':
+        return <TrendingUp className={iconClass} />;
+      case 'payment_request':
+      case 'payment_received':
+      case 'payment_completed':
+        return <CreditCard className={iconClass} />;
+      case 'group_invite':
+      case 'group_joined':
+      case 'group_left':
+        return <Users className={iconClass} />;
+      case 'account_security':
+        return <Settings className={iconClass} />;
+      case 'balance_reminder':
+      case 'settlement_reminder':
+      case 'budget_alert':
+      case 'goal_achieved':
+        return <Calendar className={iconClass} />;
+      default: 
+        return <Bell className={iconClass} />;
     }
   };
 
-  const getNotificationColor = (type: Notification['type']) => {
+  const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'expense': return 'bg-blue-500/10 text-blue-600 border-blue-200';
-      case 'payment': return 'bg-green-500/10 text-green-600 border-green-200';
-      case 'group': return 'bg-purple-500/10 text-purple-600 border-purple-200';
-      case 'message': return 'bg-orange-500/10 text-orange-600 border-orange-200';
-      case 'reminder': return 'bg-yellow-500/10 text-yellow-600 border-yellow-200';
-      case 'system': return 'bg-gray-500/10 text-gray-600 border-gray-200';
-      default: return 'bg-primary/10 text-primary border-primary/20';
+      // Wallet-specific notifications
+      case 'wallet_transfer_sent':
+        return 'bg-blue-500/10 text-blue-600 border-blue-200';
+      case 'wallet_transfer_received':
+        return 'bg-green-500/10 text-green-600 border-green-200';
+      case 'wallet_topup':
+      case 'wallet_topup_success':
+        return 'bg-green-500/10 text-green-600 border-green-200';
+      case 'wallet_topup_failed':
+        return 'bg-red-500/10 text-red-600 border-red-200';
+      case 'low_balance_alert':
+        return 'bg-orange-500/10 text-orange-600 border-orange-200';
+      case 'high_transaction_alert':
+      case 'daily_limit_alert':
+      case 'monthly_limit_alert':
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-200';
+      case 'wallet_security_alert':
+      case 'pin_changed':
+        return 'bg-purple-500/10 text-purple-600 border-purple-200';
+      case 'cashback_received':
+      case 'reward_earned':
+        return 'bg-pink-500/10 text-pink-600 border-pink-200';
+      // Original notifications
+      case 'expense_added':
+      case 'expense_updated':
+        return 'bg-blue-500/10 text-blue-600 border-blue-200';
+      case 'payment_request':
+      case 'payment_received':
+      case 'payment_completed':
+        return 'bg-green-500/10 text-green-600 border-green-200';
+      case 'group_invite':
+      case 'group_joined':
+      case 'group_left':
+        return 'bg-purple-500/10 text-purple-600 border-purple-200';
+      case 'account_security':
+        return 'bg-gray-500/10 text-gray-600 border-gray-200';
+      case 'balance_reminder':
+      case 'settlement_reminder':
+      case 'budget_alert':
+      case 'goal_achieved':
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-200';
+      default: 
+        return 'bg-primary/10 text-primary border-primary/20';
     }
   };
 
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+  const formatTimestamp = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, isRead: true } : notif
-    ));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(notif => notif.id !== id));
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification._id);
     
-    // Navigate based on notification type
-    if (notification.groupId) {
-      if (notification.type === 'message') {
-        navigate(`/group/${notification.groupId}/chat`);
-      } else {
-        navigate(`/group/${notification.groupId}`);
-      }
-    } else if (notification.type === 'payment') {
+    // Navigate based on notification type and data
+    if (notification.data?.groupId) {
+      navigate(`/group/${notification.data.groupId}`);
+    } else if (notification.type === 'expense_added' || notification.type === 'expense_updated' || 
+               notification.type.startsWith('payment') || notification.type.includes('settlement')) {
       navigate('/wallet');
     }
   };
 
-  const filterNotifications = (notifications: Notification[], filter: string) => {
+  const filterNotifications = (notifications: any[], filter: string) => {
     switch (filter) {
       case 'unread': return notifications.filter(n => !n.isRead);
-      case 'actions': return notifications.filter(n => n.actionRequired);
-      case 'payments': return notifications.filter(n => n.type === 'payment');
-      case 'groups': return notifications.filter(n => n.type === 'group' || n.type === 'message');
+      case 'actions': return notifications.filter(n => n.priority === 'high' || n.priority === 'urgent');
+      case 'payments': return notifications.filter(n => 
+        n.type.includes('payment') || 
+        n.type.includes('settlement') || 
+        n.type === 'expense_added' || 
+        n.type === 'expense_updated'
+      );
+      case 'groups': return notifications.filter(n => 
+        n.type.includes('group') || 
+        n.type === 'group_invite' || 
+        n.type === 'group_joined' || 
+        n.type === 'group_left'
+      );
       default: return notifications;
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-  const actionCount = notifications.filter(n => n.actionRequired).length;
+  const actionCount = notifications.filter(n => n.priority === 'high' || n.priority === 'urgent').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 py-6">
+        <Card className="p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <Bell className="w-12 h-12 mx-auto opacity-50" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Notifications</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="px-4 py-6 pb-20">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b">
         <div className="flex items-center justify-between p-4">
@@ -258,7 +257,7 @@ const Notifications = () => {
                   Payments
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('groups')}>
-                  Groups & Messages
+                  Groups
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -314,7 +313,7 @@ const Notifications = () => {
                   ) : (
                     filterNotifications(notifications, tab).map((notification) => (
                       <Card
-                        key={notification.id}
+                        key={notification._id}
                         className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
                           !notification.isRead ? 'border-l-4 border-l-primary bg-primary/5' : 'hover:bg-accent/50'
                         }`}
@@ -333,7 +332,7 @@ const Notifications = () => {
                                 {notification.title}
                               </h3>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                {notification.actionRequired && (
+                                {(notification.priority === 'high' || notification.priority === 'urgent') && (
                                   <Badge variant="destructive" className="text-xs">
                                     Action Required
                                   </Badge>
@@ -349,13 +348,13 @@ const Notifications = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     {!notification.isRead && (
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); markAsRead(notification._id); }}>
                                         <Check className="w-4 h-4 mr-2" />
                                         Mark as read
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem 
-                                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
+                                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification._id); }}
                                       className="text-destructive"
                                     >
                                       <X className="w-4 h-4 mr-2" />
@@ -373,31 +372,31 @@ const Notifications = () => {
                             {/* User info and amount */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                {notification.userName && (
+                                {notification.data?.userName && (
                                   <div className="flex items-center gap-1">
                                     <Avatar className="w-4 h-4">
-                                      <AvatarImage src={notification.avatar} />
+                                      <AvatarImage src={notification.data?.avatar} />
                                       <AvatarFallback className="text-xs bg-gradient-success text-white">
-                                        {notification.userName.split(' ').map(n => n[0]).join('')}
+                                        {notification.data.userName.split(' ').map((n: string) => n[0]).join('')}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <span>{notification.userName}</span>
+                                    <span>{notification.data.userName}</span>
                                   </div>
                                 )}
-                                {notification.groupName && (
+                                {notification.data?.groupName && (
                                   <Badge variant="outline" className="text-xs">
-                                    {notification.groupName}
+                                    {notification.data.groupName}
                                   </Badge>
                                 )}
                               </div>
                               
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                {notification.amount && (
+                                {notification.data?.amount && (
                                   <span className="font-medium text-foreground">
-                                    ${notification.amount.toFixed(2)}
+                                    ${notification.data.amount.toFixed(2)}
                                   </span>
                                 )}
-                                <span>{formatTimestamp(notification.timestamp)}</span>
+                                <span>{formatTimestamp(notification.createdAt)}</span>
                               </div>
                             </div>
                           </div>
@@ -415,4 +414,4 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default withLayout(Notifications, { defaultMode: 'group', defaultSubNav: 'home' });

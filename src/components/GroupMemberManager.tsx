@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Settings, Crown, Mail, Calendar, MoreVertical } from "lucide-react";
+import { UserPlus, Crown, Mail, Calendar, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import InviteMembersModal from "@/components/InviteMembersModal";
+import GroupInviteCodeManager from "@/components/GroupInviteCodeManager";
 
 interface GroupMember {
   id: string;
@@ -22,51 +22,26 @@ interface GroupMember {
 interface GroupMemberManagerProps {
   members: GroupMember[];
   isOwner: boolean;
-  onInviteMember: (email: string) => void;
-  onRemoveMember: (memberId: string) => void;
-  onTransferOwnership: (memberId: string) => void;
+  groupName?: string;
+  groupId?: string;
+  onInviteMember?: (email: string) => void;
+  onInvite?: (invites: any[]) => void;
+  onRemoveMember?: (memberId: string) => void;
+  onTransferOwnership?: (memberId: string) => void;
 }
 
 const GroupMemberManager = ({ 
   members, 
-  isOwner, 
+  isOwner,
+  groupName,
+  groupId,
   onInviteMember, 
+  onInvite,
   onRemoveMember, 
   onTransferOwnership 
 }: GroupMemberManagerProps) => {
   const { toast } = useToast();
-  const [inviteEmail, setInviteEmail] = useState("");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter an email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(inviteEmail.trim())) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    onInviteMember(inviteEmail.trim());
-    setInviteEmail("");
-    setIsInviteDialogOpen(false);
-    
-    toast({
-      title: "Invitation Sent",
-      description: `Invitation sent to ${inviteEmail.trim()}`
-    });
-  };
 
   const getBalanceColor = (balance: number) => {
     if (balance > 0) return 'text-success';
@@ -97,55 +72,42 @@ const GroupMemberManager = ({
         </div>
         
         {isOwner && (
-          <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Invite Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="glass-card">
-              <DialogHeader>
-                <DialogTitle className="text-gradient-cyber">Invite New Member</DialogTitle>
-                <DialogDescription className="text-white/70">
-                  Send an invitation to join this group
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-white font-medium">Email Address</label>
-                  <Input
-                    placeholder="member@example.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
-                    onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsInviteDialogOpen(false)}
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleInvite}
-                    className="flex-1 bg-gradient-primary text-white hover:shadow-glow transition-all duration-300"
-                  >
-                    Send Invitation
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={() => setIsInviteDialogOpen(true)}
+            className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Invite Member
+          </Button>
         )}
       </div>
+
+      {/* Enhanced Invite Members Modal */}
+      {isOwner && (
+        <InviteMembersModal
+          isOpen={isInviteDialogOpen}
+          onClose={() => setIsInviteDialogOpen(false)}
+          groupName={groupName || 'Group'}
+          groupId={groupId || ''}
+          onInviteSent={(invites) => {
+            toast({
+              title: "Invitations Sent! 🎉",
+              description: `Successfully sent ${invites.length} invitation${invites.length > 1 ? 's' : ''}`
+            });
+            onInvite?.(invites);
+          }}
+        />
+      )}
+
+      {/* Invite Code Manager for Owners/Admins */}
+      {(isOwner) && groupId && groupName && (
+        <GroupInviteCodeManager
+          groupId={groupId}
+          groupName={groupName}
+          isOwner={isOwner}
+          isAdmin={false}
+        />
+      )}
 
       {/* Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

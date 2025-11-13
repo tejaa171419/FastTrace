@@ -1,31 +1,28 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import TopNavbar from "@/components/TopNavbar";
-import HorizontalSubNavbar from "@/components/HorizontalSubNavbar";
+import Layout from "@/components/Layout";
 import StickyActionBar from "@/components/StickyActionBar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import Dashboard from "./Dashboard";
+import PersonalExpenses from "./PersonalExpenses";
 import CreateGroup from "./CreateGroup";
 import JoinGroup from "./JoinGroup";
-import Wallet from "./Wallet";
-import Analytics from "./Analytics";
 import History from "./History";
 import Profile from "./Profile";
 import Groups from "./Groups";
+import Analytics from "./Analytics";
 import WelcomeHero from "@/components/WelcomeHero";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import CalculatorModal from "@/components/CalculatorModal";
-import QRScannerModal from "@/components/QRScannerModal";
+import QRScannerModal from "@/components/wallet/QRScannerModal";
 import PullToRefresh from "@/components/PullToRefresh";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Receipt } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
   const [activeMode, setActiveMode] = useState<'group' | 'personal'>('group');
-  const [activeSubNav, setActiveSubNav] = useState('home');
+  const [activeSubNav, setActiveSubNav] = useState('groups');
   const [showWelcome, setShowWelcome] = useState(true);
   const [isNewUser, setIsNewUser] = useState(true);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -56,6 +53,12 @@ const Index = () => {
       return;
     }
     
+    // Handle create group navigation
+    if (nav === 'create-group') {
+      navigate('/create-group');
+      return;
+    }
+    
     // For all other navigation, set the sub nav (stays on current page)
     setActiveSubNav(nav);
   };
@@ -66,14 +69,18 @@ const Index = () => {
         setShowAddExpense(true);
         break;
       case 'sendMoney':
-        setActiveSubNav('wallet');
+        navigate('/wallet');
         toast({
           title: "Send Money",
           description: "Navigating to wallet...",
         });
         break;
       case 'scanQR':
-        setShowQRScanner(true);
+        navigate('/wallet/scan-qr');
+        toast({
+          title: "QR Scanner",
+          description: "Opening QR scanner...",
+        });
         break;
       case 'calculate':
         setShowCalculator(true);
@@ -100,6 +107,7 @@ const Index = () => {
           onStartPersonalTracking={() => {
             setActiveMode('personal');
             setActiveSubNav('expenses');
+            handleWelcomeDismiss();
           }}
         />
       );
@@ -107,12 +115,48 @@ const Index = () => {
 
     switch (activeSubNav) {
       case 'home':
+        return <Groups />;
+      case 'groups':
+        return <Groups />;
+      case 'create-group':
+        return <CreateGroup />;
+      case 'join-group':
+        return <JoinGroup />;
+      case 'wallet':
+        // Navigate to dedicated wallet page instead of rendering inline
+        navigate('/wallet');
+        return null;
+      case 'history':
+        return <History mode={activeMode} />;
+      case 'analytics':
+        return <Analytics mode={activeMode} />;
+      case 'expenses':
         if (activeMode === 'group') {
-          return <Groups />;
+          return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+              <div className="text-center space-y-6 animate-fade-in">
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                  <Receipt className="w-5 h-5 mr-2 text-primary" />
+                  <span className="text-white/80 text-sm font-medium">Group Expenses</span>
+                </div>
+                
+                <h1 className="text-4xl md:text-5xl font-bold text-gradient-cyber mb-4">
+                  Group Expenses
+                </h1>
+                
+                <p className="text-lg text-white/70 max-w-3xl mx-auto leading-relaxed">
+                  Select a group to view and manage expenses
+                </p>
+              </div>
+              
+              <div className="text-center py-16">
+                <Groups />
+              </div>
+            </div>
+          );
         } else {
           return (
-            <Dashboard 
-              mode="personal" 
+            <PersonalExpenses 
               onAddExpense={() => handleFloatingAction('addExpense')}
               onSendMoney={() => handleFloatingAction('sendMoney')}
               onScanQR={() => handleFloatingAction('scanQR')}
@@ -120,26 +164,6 @@ const Index = () => {
             />
           );
         }
-      case 'create-group':
-        return <CreateGroup />;
-      case 'join-group':
-        return <JoinGroup />;
-      case 'wallet':
-        return <Wallet />;
-      case 'analytics':
-        return <Analytics mode={activeMode} />;
-      case 'history':
-        return <History mode={activeMode} />;
-      case 'expenses':
-        return (
-          <Dashboard 
-            mode="personal" 
-            onAddExpense={() => handleFloatingAction('addExpense')}
-            onSendMoney={() => handleFloatingAction('sendMoney')}
-            onScanQR={() => handleFloatingAction('scanQR')}
-            onCalculate={() => handleFloatingAction('calculate')}
-          />
-        );
       default:
         return (
           <div className="min-h-screen flex items-center justify-center px-4">
@@ -153,67 +177,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-gradient-background">
-      {/* Mobile Layout */}
-      {isMobile ? (
-        <>
-          {/* Mobile Top Navigation */}
-          <TopNavbar 
-            activeMode={activeMode}
-            onModeChange={setActiveMode}
-          />
-          <HorizontalSubNavbar 
-            activeMode={activeMode}
-            activeSubNav={activeSubNav}
-            onSubNavChange={handleNavigation}
-          />
-
-          {/* Mobile Main Content */}
-          <main className="flex-1 overflow-auto">
-            <div className="p-4 pb-24 max-w-7xl mx-auto">
-              <PullToRefresh onRefresh={handleRefresh}>
-                <div className="animate-fade-in">
-                  {renderContent()}
-                </div>
-              </PullToRefresh>
-            </div>
-          </main>
-        </>
-      ) : (
-        /* Desktop Layout with Sidebar */
-        <SidebarProvider>
-          <AppSidebar 
-            activeMode={activeMode}
-            onModeChange={setActiveMode}
-            activeSubNav={activeSubNav}
-            onSubNavChange={handleNavigation}
-          />
-          <SidebarInset>
-            {/* Desktop Header */}
-            <header className="flex items-center gap-4 px-6 py-4 border-b border-white/10 bg-card/50 backdrop-blur-sm">
-              <SidebarTrigger className="mr-2" />
-              <div className="flex-1">
-                <h1 className="text-xl font-semibold text-foreground">
-                  {activeSubNav === 'home' ? `${activeMode === 'group' ? 'Group' : 'Personal'} Dashboard` :
-                   activeSubNav === 'create-group' ? 'Create Group' :
-                   activeSubNav === 'join-group' ? 'Join Group' :
-                   activeSubNav === 'profile' ? 'Profile & Settings' :
-                   activeSubNav.charAt(0).toUpperCase() + activeSubNav.slice(1)}
-                </h1>
-              </div>
-            </header>
-
-            {/* Desktop Main Content */}
-            <main className="flex-1 overflow-auto">
-              <div className="p-6 max-w-7xl mx-auto">
-                <div className="animate-fade-in">
-                  {renderContent()}
-                </div>
-              </div>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-      )}
+    <Layout
+      activeMode={activeMode}
+      onModeChange={setActiveMode}
+      activeSubNav={activeSubNav}
+      onSubNavChange={handleNavigation}
+    >
+      <div className="p-4 max-w-7xl mx-auto">
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="animate-fade-in">
+            {renderContent()}
+          </div>
+        </PullToRefresh>
+      </div>
 
       {/* Mobile Sticky Action Bar */}
       {isMobile && !(isNewUser && showWelcome && activeSubNav === 'home') && (
@@ -235,26 +211,24 @@ const Index = () => {
           onCalculate={() => handleFloatingAction('calculate')}
         />
       )}
-
-        {/* Add Expense Modal */}
-        <AddExpenseModal 
-          isOpen={showAddExpense}
-          onClose={() => setShowAddExpense(false)}
-          mode={activeMode}
-        />
-
-        {/* Calculator Modal */}
-        <CalculatorModal 
-          isOpen={showCalculator}
-          onClose={() => setShowCalculator(false)}
-        />
-
-      {/* QR Scanner Modal */}
-      <QRScannerModal 
+      
+      {/* Modals */}
+      <AddExpenseModal
+        isOpen={showAddExpense}
+        onClose={() => setShowAddExpense(false)}
+        mode={activeMode}
+      />
+      
+      <CalculatorModal
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
+      />
+      
+      <QRScannerModal
         isOpen={showQRScanner}
         onClose={() => setShowQRScanner(false)}
       />
-    </div>
+    </Layout>
   );
 };
 

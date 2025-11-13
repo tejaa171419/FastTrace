@@ -1,241 +1,263 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ExpenseChart from "@/components/ExpenseChart";
 import StatsCard from "@/components/StatsCard";
-import { TrendingUp, TrendingDown, Calendar, PieChart, BarChart3, Target, Wallet, Users, Download, Filter } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, PieChart, BarChart3, Target, Wallet, Users, Download, Filter, ChevronRight, ArrowLeft } from "lucide-react";
+import withLayout from "@/components/withLayout";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { TimeRange } from "@/types/analytics";
+import { toast } from "sonner";
+import { useQuery } from '@tanstack/react-query';
+import { groupService } from '@/lib/services/groupService';
 interface AnalyticsProps {
   mode?: 'group' | 'personal';
+  groupId?: string;
 }
 const Analytics = ({
-  mode = 'group'
+  mode = 'personal',
+  groupId: propGroupId
 }: AnalyticsProps) => {
-  const [timeRange, setTimeRange] = useState('thisMonth');
   const [chartType, setChartType] = useState<'pie' | 'bar' | 'area' | 'line'>('pie');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(propGroupId);
+  const [viewMode, setViewMode] = useState<'personal' | 'group'>(mode);
+  
+  // Sync viewMode with mode prop from layout when it changes
+  useEffect(() => {
+    if (mode) {
+      setViewMode(mode);
+    }
+  }, [mode]);
+  
+  // Fetch user's groups
+  const { data: groupsData, isLoading: groupsLoading } = useQuery({
+    queryKey: ['userGroups'],
+    queryFn: async () => {
+      const response = await groupService.getGroups();
+      return response.data;
+    },
+    enabled: viewMode === 'group'
+  });
+  
+  const userGroups = groupsData?.groups || [];
+  
+  // Use analytics hook for real data
+  const {
+    statCards,
+    chartData: apiChartData,
+    sortedCategories,
+    trends,
+    insights,
+    timeRange,
+    setTimeRange,
+    sortBy,
+    setSortBy,
+    isLoading,
+    error,
+    refresh,
+    exportData
+  } = useAnalytics({
+    mode: viewMode,
+    groupId: selectedGroupId,
+    enabled: viewMode === 'personal' || (viewMode === 'group' && !!selectedGroupId)
+  });
 
-  // Analytics data
-  const analyticsStats = {
-    group: [{
-      title: "Group Efficiency",
-      value: "92%",
-      icon: Target,
-      trend: {
-        value: 8.2,
-        label: "vs last month"
-      },
-      color: 'success' as const
-    }, {
-      title: "Avg. Settlement Time",
-      value: "2.3 days",
-      icon: Calendar,
-      trend: {
-        value: -15.4,
-        label: "faster than before"
-      },
-      color: 'primary' as const
-    }, {
-      title: "Most Active Spender",
-      value: "Rahul",
-      icon: Users,
-      subtitle: "₹18,400 this month"
-    }, {
-      title: "Largest Expense",
-      value: "₹8,400",
-      icon: TrendingUp,
-      subtitle: "Goa Trip - Travel"
-    }],
-    personal: [{
-      title: "Spending Efficiency",
-      value: "87%",
-      icon: Target,
-      trend: {
-        value: 12.8,
-        label: "improvement"
-      },
-      color: 'success' as const
-    }, {
-      title: "Daily Average",
-      value: "₹956",
-      icon: Calendar,
-      trend: {
-        value: -8.2,
-        label: "vs last month"
-      },
-      color: 'success' as const
-    }, {
-      title: "Top Category",
-      value: "Food",
-      icon: PieChart,
-      subtitle: "₹8,200 this month"
-    }, {
-      title: "Savings Rate",
-      value: "68%",
-      icon: Wallet,
-      trend: {
-        value: 5.4,
-        label: "vs target"
-      },
-      color: 'primary' as const
-    }]
+  // Process real data from API
+  const currentStats = statCards;
+  
+  // Transform chart data to match ChartDataPoint interface
+  const currentChart = apiChartData.map(item => ({
+    name: item.name,
+    value: item.value,
+    ...(item.color && { color: item.color })
+  }));
+  
+  // Convert trends data for area chart
+  const monthlyData = trends.map(trend => ({
+    name: trend.period,
+    value: trend.totalAmount
+  }));
+  
+  // Transform categories for trends view (with comparison data simulation)
+  const currentTrends = sortedCategories.map(cat => ({
+    name: cat.category,
+    current: cat.totalAmount,
+    previous: cat.totalAmount * 0.9, // Simulated previous value
+    change: ((cat.totalAmount - cat.totalAmount * 0.9) / (cat.totalAmount * 0.9)) * 100,
+    color: cat.color || '#6b7280'
+  }));
+  
+  // Handle refresh
+  const handleRefresh = async () => {
+    try {
+      await refresh();
+      toast.success('Analytics refreshed successfully');
+    } catch (err) {
+      toast.error('Failed to refresh analytics');
+    }
   };
-  const categoryTrends = {
-    group: [{
-      name: 'Food & Dining',
-      current: 12400,
-      previous: 10800,
-      change: 14.8,
-      color: '#10b981'
-    }, {
-      name: 'Travel',
-      current: 8900,
-      previous: 12200,
-      change: -27.0,
-      color: '#3b82f6'
-    }, {
-      name: 'Entertainment',
-      current: 4200,
-      previous: 3800,
-      change: 10.5,
-      color: '#8b5cf6'
-    }, {
-      name: 'Housing',
-      current: 15000,
-      previous: 15000,
-      change: 0,
-      color: '#ef4444'
-    }, {
-      name: 'Shopping',
-      current: 3200,
-      previous: 4100,
-      change: -22.0,
-      color: '#f59e0b'
-    }],
-    personal: [{
-      name: 'Food & Dining',
-      current: 8200,
-      previous: 9100,
-      change: -9.9,
-      color: '#10b981'
-    }, {
-      name: 'Transportation',
-      current: 3400,
-      previous: 4200,
-      change: -19.0,
-      color: '#3b82f6'
-    }, {
-      name: 'Entertainment',
-      current: 2100,
-      previous: 2800,
-      change: -25.0,
-      color: '#8b5cf6'
-    }, {
-      name: 'Shopping',
-      current: 4800,
-      previous: 3900,
-      change: 23.1,
-      color: '#f59e0b'
-    }, {
-      name: 'Bills & Utilities',
-      current: 6200,
-      previous: 6800,
-      change: -8.8,
-      color: '#ef4444'
-    }]
+  
+  // Handle export
+  const handleExport = () => {
+    try {
+      exportData();
+      toast.success('Data exported successfully');
+    } catch (err) {
+      toast.error('Failed to export data');
+    }
   };
-  const chartData = {
-    group: [{
-      name: 'Food & Dining',
-      value: 12400,
-      color: '#10b981'
-    }, {
-      name: 'Travel & Transport',
-      value: 8900,
-      color: '#3b82f6'
-    }, {
-      name: 'Entertainment',
-      value: 4200,
-      color: '#8b5cf6'
-    }, {
-      name: 'Housing',
-      value: 15000,
-      color: '#ef4444'
-    }, {
-      name: 'Shopping',
-      value: 3200,
-      color: '#f59e0b'
-    }],
-    personal: [{
-      name: 'Food & Dining',
-      value: 8200,
-      color: '#10b981'
-    }, {
-      name: 'Transportation',
-      value: 3400,
-      color: '#3b82f6'
-    }, {
-      name: 'Entertainment',
-      value: 2100,
-      color: '#8b5cf6'
-    }, {
-      name: 'Shopping',
-      value: 4800,
-      color: '#f59e0b'
-    }, {
-      name: 'Bills & Utilities',
-      value: 6200,
-      color: '#ef4444'
-    }]
-  };
-  const monthlyData = [{
-    month: 'Aug',
-    income: 45000,
-    expense: 32000,
-    savings: 13000
-  }, {
-    month: 'Sep',
-    income: 48000,
-    expense: 29000,
-    savings: 19000
-  }, {
-    month: 'Oct',
-    income: 45000,
-    expense: 31000,
-    savings: 14000
-  }, {
-    month: 'Nov',
-    income: 52000,
-    expense: 28000,
-    savings: 24000
-  }, {
-    month: 'Dec',
-    income: 65000,
-    expense: 35000,
-    savings: 30000
-  }, {
-    month: 'Jan',
-    income: 65000,
-    expense: 28680,
-    savings: 36320
-  }];
-  const currentStats = analyticsStats[mode];
-  const currentTrends = categoryTrends[mode];
-  const currentChart = chartData[mode];
+  
+  // Show group selector if in group mode but no group selected
+  if (viewMode === 'group' && !selectedGroupId) {
+    return (
+      <div className="space-y-8 py-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Users className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Select a Group</h2>
+            <p className="text-muted-foreground">
+              Choose a group to view its analytics and spending insights
+            </p>
+          </div>
+
+          {groupsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <Card key={i} className="glass-card p-6 animate-pulse">
+                  <div className="h-16 bg-muted rounded" />
+                </Card>
+              ))}
+            </div>
+          ) : userGroups.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {userGroups.map((group: any) => (
+                <Card
+                  key={group._id}
+                  className="glass-card hover-lift border-white/10 cursor-pointer transition-all duration-300 hover:border-primary/30 hover:shadow-glow"
+                  onClick={() => setSelectedGroupId(group._id)}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                          {group.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg text-foreground">{group.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {group.members?.length || 0} members
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    
+                    {group.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {group.description}
+                      </p>
+                    )}
+                    
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="px-2 py-1 rounded-full bg-primary/10 text-primary">
+                        {group.category || 'General'}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="glass-card p-12 text-center">
+              <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Groups Found</h3>
+              <p className="text-muted-foreground mb-6">
+                You're not a member of any groups yet. Create or join a group to view group analytics.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                💡 Tip: Use the "Personal" button in the navbar above to view your personal analytics,
+                or create a new group to get started with group analytics.
+              </p>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  // Get selected group name
+  const selectedGroup = userGroups.find((g: any) => g._id === selectedGroupId);
+  
   return <div className="space-y-8 py-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {mode === 'group' ? 'Group Analytics' : 'Personal Analytics'}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-foreground">
+              {viewMode === 'group' ? 'Group Analytics' : 'Personal Analytics'}
+            </h1>
+            {viewMode === 'group' && selectedGroup && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">{selectedGroup.name}</span>
+              </div>
+            )}
+          </div>
           <p className="text-muted-foreground">
-            Detailed insights into your {mode === 'group' ? 'group spending' : 'financial'} patterns
+            {viewMode === 'group' && selectedGroup
+              ? `Analytics for ${selectedGroup.name}`
+              : 'Detailed insights into your financial patterns'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40">
+        
+        {/* Mode Switcher - Removed as it's now controlled by the top navbar */}
+        <div className="text-sm text-muted-foreground">
+          {viewMode === 'group' && !selectedGroupId && (
+            <span>💡 Select a group below to view analytics</span>
+          )}
+          {viewMode === 'group' && selectedGroupId && (
+            <span>📊 Viewing group analytics</span>
+          )}
+          {viewMode === 'personal' && (
+            <span>📊 Viewing personal analytics</span>
+          )}
+        </div>
+      </div>
+      
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Group Selector (when in group mode) */}
+          {viewMode === 'group' && (
+            <Select 
+              value={selectedGroupId} 
+              onValueChange={setSelectedGroupId}
+            >
+              <SelectTrigger className="w-48 glass-card">
+                <SelectValue placeholder="Select Group" />
+              </SelectTrigger>
+              <SelectContent>
+                {userGroups.map((group: any) => (
+                  <SelectItem key={group._id} value={group._id}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+                        {group.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span>{group.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          
+          {/* Time Range Selector */}
+          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+            <SelectTrigger className="w-40 glass-card">
               <SelectValue placeholder="Time Range" />
             </SelectTrigger>
             <SelectContent>
@@ -245,7 +267,27 @@ const Analytics = ({
               <SelectItem value="thisYear">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="glass-card border-white/20 text-foreground hover:bg-primary/10">
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="glass-card border-white/20 text-foreground hover:bg-primary/10"
+          >
+            <Filter className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExport}
+            disabled={!currentChart.length}
+            className="glass-card border-white/20 text-foreground hover:bg-primary/10"
+          >
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
@@ -568,4 +610,5 @@ const Analytics = ({
       </Tabs>
     </div>;
 };
-export default Analytics;
+
+export default withLayout(Analytics);

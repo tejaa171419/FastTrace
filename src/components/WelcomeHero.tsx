@@ -66,11 +66,11 @@ const WelcomeHero = ({ onDismiss, onCreateGroup, onStartPersonalTracking }: Welc
               
               <div>
                 <h1 className="text-responsive-2xl font-bold text-gradient-cyber mb-4">
-                  Welcome to Zenith Wallet Hub
+                  Welcome to fastTrace
                 </h1>
                 <p className="text-responsive-base text-white/80 max-w-2xl mx-auto">
-                  Your ultimate financial companion for smart expense management, 
-                  group splitting, and personal finance tracking with beautiful insights.
+                  Your smart expense tracking companion for intelligent spending management, 
+                  group bill splitting, and comprehensive financial insights.
                 </p>
               </div>
 

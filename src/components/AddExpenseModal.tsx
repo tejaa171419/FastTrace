@@ -114,11 +114,6 @@ const AddExpenseModal = ({ isOpen, onClose, mode = 'personal' }: AddExpenseModal
       description: `₹${data.amount} expense for ${data.title} has been recorded.`,
     });
     
-    console.log("Expense data:", {
-      ...data,
-      amount: Number(data.amount),
-    });
-    
     setIsSubmitting(false);
     form.reset();
     onClose();

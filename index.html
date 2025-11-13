@@ -2,24 +2,85 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Expensiver Pro - Advanced Expense Tracking</title>
-    <meta name="description" content="Track group and personal expenses with beautiful analytics, real-time splitting, and advanced money management features." />
-    <meta name="author" content="Expensiver Pro" />
-    <meta name="keywords" content="expense tracker, money management, bill splitting, group expenses, personal finance" />
-
-    <meta property="og:title" content="Expensiver Pro - Advanced Expense Tracking" />
-    <meta property="og:description" content="Track group and personal expenses with beautiful analytics and real-time splitting." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FastTrace - Advanced Money Management</title>
+    <meta name="description" content="Manage your group and personal finances with FastTrace's advanced money management features. Split bills, track expenses, and optimize your financial health." />
+    <meta name="author" content="FastTrace Team" />
+    <meta name="keywords" content="expense tracker, money management, bill splitting, group expenses, personal finance, financial health, budget tracking" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="FastTrace - Smart Expense Tracker" />
+    <meta property="og:description" content="Manage your group and personal finances with FastTrace's advanced money management features. Split bills, track expenses, and optimize your financial health." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    <meta property="og:url" content="https://FastTrace.com" />
+    <meta property="og:image" content="/logo1.png" />
+    
+    <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="FastTrace - Smart Expense Tracker" />
+    <meta name="twitter:description" content="Manage your group and personal finances with FastTrace's advanced money management features. Split bills, track expenses, and optimize your financial health." />
+    <meta name="twitter:image" content="/logo1.png" />
+    
+    <!-- Theme Color for Mobile Browsers -->
+    <meta name="theme-color" content="#6366f1" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    
+    <!-- Content Security Policy -->
+    <!-- Note: Keep this meta CSP aligned with server headers to avoid policy intersection that can block third-party checkout iframes (e.g., Razorpay). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws: wss: http: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://checkout.razorpay.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https: https://api.razorpay.com; frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self';" />
   </head>
 
   <body>
+    <!-- Loading indicator for better UX -->
+    <div id="loading-indicator" class="fixed inset-0 flex items-center justify-center bg-background z-50">
+      <div class="flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-muted-foreground">Loading FastTrace...</p>
+      </div>
+    </div>
+    
+    <!-- Main application container -->
     <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      // Register service worker for offline support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('✅ ServiceWorker registered with scope:', registration.scope);
+            })
+            .catch(error => {
+              console.log('❌ ServiceWorker registration failed:', error);
+            });
+        });
+      }
+      
+      // Hide loading indicator when app is ready
+      window.addEventListener('load', () => {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+          setTimeout(() => {
+            loadingIndicator.style.opacity = '0';
+            setTimeout(() => {
+              loadingIndicator.style.display = 'none';
+            }, 300);
+          }, 500);
+        }
+      });
+    </script>
+    
+    <!-- Application entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

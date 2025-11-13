@@ -45,7 +45,7 @@ const BankAccountsManager = () => {
     ifscCode: "SBIN0001234",
     bankName: "State Bank of India",
     branchName: "Main Branch",
-    accountHolderName: "John Doe",
+    accountHolderName: "Current User",
     accountType: "savings",
     nickname: "Primary SBI",
     isVerified: true,

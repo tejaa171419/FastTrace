@@ -1,23 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, CreditCard, QrCode, Building2, Mail, Phone, Shield, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import UniversalProfileButton from "@/components/UniversalProfileButton";
-import PersonalInfoForm from "@/components/profile/PersonalInfoForm";
+import ImprovedPersonalInfoForm from "@/components/profile/ImprovedPersonalInfoForm";
 import UPIManagement from "@/components/profile/UPIManagement";
 import QRCodeSection from "@/components/profile/QRCodeSection";
 import BankAccountsManager from "@/components/profile/BankAccountsManager";
 import ContactInformation from "@/components/profile/ContactInformation";
-import SecuritySettings from "@/components/profile/SecuritySettings";
+import SecuritySettings from "@/components/wallet/SecuritySettings";
+import withLayout from "@/components/withLayout";
 
 const Profile = () => {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("personal");
   const navigate = useNavigate();
 
+  // Handle URL tab parameters
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['personal', 'upi', 'qr', 'bank', 'contact', 'security', 'payment', 'preferences'].includes(tab)) {
+      // Map 'payment' to 'upi' for backward compatibility
+      const mappedTab = tab === 'payment' ? 'upi' : tab === 'preferences' ? 'security' : tab;
+      setActiveTab(mappedTab);
+    }
+  }, [searchParams]);
+
   return (
-    <div className="min-h-screen bg-gradient-background px-4 py-6 md:py-8 pb-20">
+    <div className="px-4 py-6 md:py-8 pb-20">
       <div className="max-w-6xl mx-auto">
         {/* Enhanced Header with Navigation */}
         <div className="flex items-center justify-between mb-8 md:mb-12">
@@ -107,7 +119,7 @@ const Profile = () => {
           {/* Enhanced Tab Content with Animations */}
           <TabsContent value="personal" className="space-y-6 animate-fade-in">
             <div className="glass-card p-6 md:p-8 rounded-xl">
-              <PersonalInfoForm />
+              <ImprovedPersonalInfoForm />
             </div>
           </TabsContent>
 
@@ -146,4 +158,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default withLayout(Profile, { defaultMode: 'group', defaultSubNav: 'profile' });

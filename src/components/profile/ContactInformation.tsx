@@ -13,7 +13,7 @@ import { Mail, Phone, MessageSquare, Globe, CheckCircle, AlertCircle, Plus, Tras
 import { toast } from "sonner";
 const contactSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits").regex(/^[+]?[0-9\s\-\(\)]+$/, "Please enter a valid phone number"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits").regex(/^[+]?[0-9\s\-()]+$/, "Please enter a valid phone number"),
   whatsapp: z.string().optional(),
   website: z.string().url("Please enter a valid website URL").optional().or(z.literal("")),
   linkedin: z.string().url("Please enter a valid LinkedIn URL").optional().or(z.literal("")),
@@ -346,7 +346,7 @@ const ContactInformation = () => {
                 }) => <FormItem>
                           <FormLabel>Emergency Contact Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe (Relation)" {...field} />
+                            <Input placeholder="Emergency Contact (Relation)" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>} />

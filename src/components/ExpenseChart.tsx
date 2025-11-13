@@ -3,10 +3,16 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 
 interface ExpenseChartProps {
   type: 'pie' | 'bar' | 'area' | 'line';
-  data: any[];
+  data: ChartDataPoint[];
   title: string;
   gradient?: boolean;
   showGlow?: boolean;
+}
+
+interface ChartDataPoint {
+  name: string;
+  value: number;
+  [key: string]: string | number;
 }
 
 const ExpenseChart = ({
@@ -41,7 +47,14 @@ const ExpenseChart = ({
     innerRadius,
     outerRadius,
     percent
-  }: any) => {
+  }: {
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    percent: number;
+  }) => {
     if (percent < 0.05) return null;
 
     const RADIAN = Math.PI / 180;
@@ -65,12 +78,16 @@ const ExpenseChart = ({
     );
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl p-4 shadow-2xl animate-fade-in">
           <p className="font-semibold text-card-foreground mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index) => (
             <div key={index} className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full shadow-glow" 
